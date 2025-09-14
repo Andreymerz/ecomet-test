@@ -14,8 +14,9 @@ logger = logging.getLogger(__name__)
 
 class ClickHouseConnectionManager:
     """
-    Вообще логику батчинга лучше вынести отдельно в модуль с
-    репозиториями, но для тестового задания оставим все в одном классе
+    Вообще логику преобразования датаклассов в объекты для БД и логику батчинга лучше вынести отдельно в модуль (репозиторий),
+    но для тестового задания оставлю все в одном классе.
+    В идеале найти ORM для Clickhouse, тут надо ресерчить. Не знаю есть ли что-нибудь хорошее.
     """
     def __init__(self, url: str = "http://localhost:8123", user: str = "clickhouse",
                  password: str = "password123", database: str = "test", batch_size: int = 1000):
@@ -52,7 +53,6 @@ class ClickHouseConnectionManager:
         logger.info(f"Starting to save data for {len(repositories)} repositories")
 
         try:
-            # Подготовка данных репозиториев
             current_time = datetime.now().replace(microsecond=0)
             repositories_data = [
                 (repo.name, repo.owner, repo.stars, repo.watchers, repo.forks,
@@ -60,14 +60,12 @@ class ClickHouseConnectionManager:
                 for repo in repositories
             ]
 
-            # Подготовка данных позиций
             current_date = date.today()
             positions_data = [
                 (current_date, f"{repo.owner}/{repo.name}", repo.position)
                 for repo in repositories
             ]
 
-            # Подготовка данных коммитов авторов
             authors_commits_data = []
             for repo in repositories:
                 for author_commit in repo.authors_commits_num_today:
@@ -84,6 +82,9 @@ class ClickHouseConnectionManager:
                                         "(date, repo, position)")
             await self._save_in_batches(authors_commits_data, "repositories_authors_commits",
                                         "(date, repo, author, commits_num)")
+
+            # хардкодить названия колонок так как тут сделано в проде не нужно, назовем это рабочим черновым вариантом
+            # структура кода супер простая для тестового задания.
 
             logger.info(f"Successfully saved data for {len(repositories)} repositories")
             logger.info(f"Saved {len(authors_commits_data)} author commits records")
@@ -111,10 +112,6 @@ class ClickHouseConnectionManager:
             except Exception as e:
                 logger.error(f"Error inserting {table} batch: {e}")
                 raise
-
-            # Небольшая задержка между батчами для снижения нагрузки
-            if i + self.batch_size < len(data):
-                await asyncio.sleep(0.1)
 
 
 async def main():
