@@ -83,8 +83,7 @@ class ClickHouseConnectionManager:
             await self._save_in_batches(authors_commits_data, "repositories_authors_commits",
                                         "(date, repo, author, commits_num)")
 
-            # хардкодить названия колонок так как тут сделано в проде не нужно, назовем это рабочим черновым вариантом
-            # структура кода супер простая для тестового задания.
+            # хардкодить названия колонок так как тут сделано в проде не нужно, это черновой вариант
 
             logger.info(f"Successfully saved data for {len(repositories)} repositories")
             logger.info(f"Saved {len(authors_commits_data)} author commits records")
